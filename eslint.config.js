@@ -11,7 +11,16 @@ export default [
     processor: "check-file/eslint-processor-check-file",
   },
   {
-    ignores: ["dist", "build", "node_modules"],
+    ignores: [
+      "**/dist/**",
+      "**/build/**",
+      "**/node_modules/**",
+      "**/.react-router/**",
+      "**/+types/**",
+      "**/coverage/**",
+      "**/playwright-report/**",
+      "**/test-results/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -65,8 +74,7 @@ export default [
       "check-file/filename-naming-convention": [
         "error",
         {
-          "**/*.{jsx,tsx}": "KEBAB_CASE",
-          "**/*.{js,ts}": "KEBAB_CASE",
+          "**/*.{js,jsx,ts,tsx}": "KEBAB_CASE",
         },
       ],
       "check-file/folder-naming-convention": [
@@ -84,7 +92,6 @@ export default [
       "vite.config.ts",
       "playwright.config.ts",
       "react-router.config.ts",
-      ".react-router",
       "**/*.spec.ts",
       "**/*.spec.tsx",
       "**/*.test.ts",
