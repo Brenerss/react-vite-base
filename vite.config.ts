@@ -20,7 +20,10 @@ export default defineConfig({
     setupFiles: "./src/testing/setup-tests.ts",
     exclude: ["**/node_modules/**", "**/e2e/**"],
     coverage: {
-      include: ["src/**"],
+      provider: "v8",
+      reporter: ["text", "html"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.test.*", "src/**/*.spec.*", "src/app/+types/**"],
     },
   },
   plugins: [tailwindcss(), reactRouter()],
