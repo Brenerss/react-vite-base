@@ -84,6 +84,7 @@ export default [
       "vite.config.ts",
       "playwright.config.ts",
       "react-router.config.ts",
+      ".react-router",
       "**/*.spec.ts",
       "**/*.spec.tsx",
       "**/*.test.ts",
