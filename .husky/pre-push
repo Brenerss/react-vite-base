@@ -1,15 +1,15 @@
 #!/usr/bin/env sh
 
 echo "🔍 Running lint..."
-npm run lint || exit 1
+npm run -s lint || exit 1
 
 echo "🎨 Checking formatting..."
-npm run format:check || exit 1
+npm run -s format:check || exit 1
 
 echo "🧪 Running unit tests..."
-npm run test:run || exit 1
+npm run -s test:run || exit 1
 
 echo "🌐 Running E2E tests..."
-npm run test:e2e || exit 1
+npm run -s test:e2e || exit 1
 
 echo "✅ Pre-push checks passed!"
