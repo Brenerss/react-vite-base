@@ -1,10 +1,9 @@
-import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+const Home = () => {
+  return (
+    <main className="flex h-screen w-screen items-center justify-center">
+      <h1 className="text-2xl font-semibold">BaseApp</h1>
+    </main>
+  );
+};
 
-export function meta(_: Route.MetaArgs) {
-  return [{ title: "BaseApp" }, { name: "description", content: "BaseApp" }];
-}
-
-export default function Home() {
-  return <Welcome />;
-}
+export default Home;

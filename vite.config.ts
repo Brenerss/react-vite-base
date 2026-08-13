@@ -1,12 +1,14 @@
 /// <reference types="vitest" />
 /// <reference types="vite/client" />
 
-import { reactRouter } from "@react-router/dev/vite";
 import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  base: "./",
+  // "/" (padrão) é obrigatório numa SPA: com "./" os assets quebram em rotas
+  // profundas, porque o browser resolve o caminho relativo à URL atual.
+  base: "/",
   server: {
     port: 3000,
   },
@@ -26,7 +28,7 @@ export default defineConfig({
       exclude: ["src/**/*.test.*", "src/**/*.spec.*", "src/app/+types/**"],
     },
   },
-  plugins: [tailwindcss(), reactRouter()],
+  plugins: [tailwindcss(), react()],
   resolve: {
     tsconfigPaths: true,
   },

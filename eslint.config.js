@@ -56,7 +56,6 @@ export default [
           varsIgnorePattern: "^_",
         },
       ],
-      "check-file/no-index": "error",
       "check-file/filename-blocklist": [
         "error",
         {
@@ -91,7 +90,6 @@ export default [
       "eslint.config.js",
       "vite.config.ts",
       "playwright.config.ts",
-      "react-router.config.ts",
       "**/*.spec.ts",
       "**/*.spec.tsx",
       "**/*.test.ts",

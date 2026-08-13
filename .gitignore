@@ -2,9 +2,8 @@
 .env
 /node_modules/
 
-# React Router
-/.react-router/
-/build/
+# Vite
+/dist/
 
 # Playwright
 node_modules/
