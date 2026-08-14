@@ -1,6 +1,6 @@
 # react-vite-base
 
-Base template for React applications built with **React Router 8 (Framework Mode)**, **Vite**, and **TypeScript** — preconfigured with testing, linting, formatting, git hooks, and a Docker build.
+Base template for React single-page applications built with **Vite**, **React Router 8 (Data Mode)**, and **TypeScript** — preconfigured with testing, linting, formatting, git hooks, and an nginx-based Docker build.
 
 Clone it and start writing features: the project infrastructure is already in place.
 
@@ -9,19 +9,20 @@ Clone it and start writing features: the project infrastructure is already in pl
 | Layer         | Tooling                                              |
 | ------------- | ---------------------------------------------------- |
 | UI            | React 19, Tailwind CSS 4, lucide-react               |
-| Routing / SSR | React Router 8 in Framework Mode (SSR enabled)       |
-| Build         | Vite 8                                               |
-| Data fetching | TanStack Query, Axios                                |
+| Routing       | React Router 8 in Data Mode (`createBrowserRouter`)  |
+| Build         | Vite 8 (client-only SPA, no SSR)                     |
+| Data fetching | TanStack Query (+ Devtools), Axios                   |
 | State         | Zustand                                              |
 | Forms         | React Hook Form + Zod (via `@hookform/resolvers`)    |
 | Utilities     | dayjs, lodash, dompurify, react-error-boundary       |
+| Styling utils | clsx + tailwind-merge (`~/utils/cn`)                 |
 | Unit tests    | Vitest + Testing Library (jsdom)                     |
 | E2E tests     | Playwright (Chromium + Firefox)                      |
 | Code quality  | ESLint 9 (flat config), Prettier, Husky, lint-staged |
 
 ## Requirements
 
-- Node.js 24+ (the Docker image uses `node:24-alpine`)
+- Node.js 24+ (the Docker build image uses `node:24-alpine`)
 - npm
 
 ## Getting started
@@ -38,13 +39,11 @@ The app runs at `http://localhost:3000` with HMR.
 
 Any variable exposed to the client must be prefixed with `VITE_`. See `.env.example`:
 
-| Variable                      | Description                          |
-| ----------------------------- | ------------------------------------ |
-| `VITE_APP_API_URL`            | Base URL of the API the app consumes |
-| `VITE_APP_ENABLE_API_MOCKING` | Toggles API mocking                  |
-| `VITE_APP_MOCK_API_PORT`      | Port used by the mock server         |
+| Variable           | Description                          |
+| ------------------ | ------------------------------------ |
+| `VITE_APP_API_URL` | Base URL of the API the app consumes |
 
-E2E runs have their own file, `.env.example-e2e`, which points the API to `http://localhost:8080/api`, disables mocking, and sets `VITE_APP_URL=http://localhost:3000`.
+E2E runs have their own file, `.env.example-e2e`, which points the API to `http://localhost:8080/api` and sets `VITE_APP_URL=http://localhost:3000`.
 
 > `.env` is gitignored — never commit credentials.
 
@@ -53,9 +52,9 @@ E2E runs have their own file, `.env.example-e2e`, which points the API to `http:
 | Script                    | What it does                                               |
 | ------------------------- | ---------------------------------------------------------- |
 | `npm run dev`             | Dev server with HMR (port 3000)                            |
-| `npm run build`           | Production build into `build/` (client + server)           |
-| `npm run start`           | Serves the production build with `react-router-serve`      |
-| `npm run typecheck`       | Generates route types and runs `tsc`                       |
+| `npm run build`           | Production build into `dist/`                              |
+| `npm run start`           | Serves the built output with `vite preview` (port 3000)    |
+| `npm run typecheck`       | `tsc --noEmit`                                             |
 | `npm run lint`            | ESLint across the project                                  |
 | `npm run lint:fix`        | ESLint with autofix                                        |
 | `npm run format`          | Prettier, rewriting files                                  |
@@ -71,21 +70,44 @@ E2E runs have their own file, `.env.example-e2e`, which points the API to `http:
 ## Project structure
 
 ```
+index.html                # SPA entry document
 src/
-└── app/                  # React Router appDirectory
-    ├── root.tsx          # root layout, links, error boundary
-    ├── routes.ts         # route definitions
-    ├── app.css           # global styles / Tailwind
-    ├── routes/           # route modules
-    └── welcome/          # landing screen components
+├── main.tsx              # createRoot + StrictMode
+├── app/
+│   ├── index.tsx         # <App /> = provider + router
+│   ├── provider.tsx      # Suspense, ErrorBoundary, QueryClientProvider, Devtools
+│   ├── router.tsx        # createBrowserRouter with lazy route modules
+│   ├── app.css           # global styles / Tailwind
+│   └── routes/           # route modules
+├── components/
+│   ├── errors/           # MainErrorFallback
+│   └── ui/               # shared UI (spinner, …)
+├── hooks/                # shared hooks (+ __tests__/)
+├── lib/react-query.ts    # query defaults and helper types
+├── testing/setup-tests.ts
+└── utils/cn.ts           # clsx + tailwind-merge
 e2e/                      # Playwright specs
 public/                   # static assets
 .agents/skills/           # reference skills (React Router) for AI agents
 ```
 
-The `~/*` alias maps to `src/app/*` (configured in `tsconfig.json`).
+The `~/*` alias maps to `src/*` (declared in `tsconfig.json`, picked up by Vite through `resolve.tsconfigPaths`).
 
-SSR is on (`ssr: true` in `react-router.config.ts`), so route modules run on both server and client. Switch to `ssr: false` for SPA mode.
+### Routing
+
+Routes are plain objects in `src/app/router.tsx`, loaded with `lazy()` for code splitting. A route module default-exports its component and may export `clientLoader` / `clientAction` factories that receive the `QueryClient`:
+
+```tsx
+// src/app/routes/example.tsx
+export const clientLoader = (queryClient: QueryClient) => async () => {
+  return queryClient.ensureQueryData(exampleQueryOptions());
+};
+
+const Example = () => { ... };
+export default Example;
+```
+
+The `convert` helper in `router.tsx` maps those exports onto React Router's `loader` / `action` / `Component`, so the query client is available inside data loading without prop drilling.
 
 ## Code conventions
 
@@ -93,7 +115,6 @@ These rules are enforced by ESLint (`eslint-plugin-check-file`) and will fail th
 
 - **File names** in `kebab-case` (`user-profile.tsx`, not `UserProfile.tsx`)
 - **Folder names** in `kebab-case`
-- **No `index` files** (`check-file/no-index`) — import the file explicitly
 - Tests live in `__tests__/` folders
 - Components suffixed `.styled.tsx` live under `components/`
 - Use `*.models.ts` and `*.utils.ts` (plural) — the singular forms are blocklisted
@@ -102,9 +123,9 @@ Formatting (Prettier): semicolons, double quotes, trailing commas everywhere, 10
 
 ## Testing
 
-**Unit** — Vitest with the `jsdom` environment, globals enabled, and `@testing-library/jest-dom` loaded in setup. The `e2e/` folder is excluded from the run. Coverage covers `src/**/*.{ts,tsx}`, skipping tests and generated types (`src/app/+types/**`).
+**Unit** — Vitest with the `jsdom` environment, globals enabled, and `@testing-library/jest-dom` loaded in setup. The `e2e/` folder is excluded from the run. Coverage covers `src/**/*.{ts,tsx}`, skipping test files.
 
-**E2E** — Playwright targets `http://localhost:3000` and starts the dev server itself (`webServer`), reusing an already-running server outside CI. On failure it captures a screenshot, a video, and a trace on the first retry. In CI: 2 retries, 1 worker, and `forbidOnly`.
+**E2E** — Playwright targets `http://localhost:3000` and starts the dev server itself (`webServer`), reusing an already-running server outside CI. On failure it captures a screenshot and a video, plus a trace on the first retry. In CI: 2 retries, 1 worker, and `forbidOnly`.
 
 ## Git hooks
 
@@ -121,25 +142,22 @@ Hooks are installed automatically by the `prepare` script on `npm install`.
 
 ## Docker
 
-The `Dockerfile` uses a multi-stage build (dev deps, prod deps, build, slim runtime image):
+The `Dockerfile` builds the app with Node and serves the static output with nginx:
 
 ```bash
 docker build -t react-vite-base .
-docker run -p 3000:3000 react-vite-base
+docker run -p 8080:80 react-vite-base
 ```
+
+`nginx.conf` handles what a SPA needs in production:
+
+- SPA fallback (`try_files ... /index.html`) so deep React Router URLs resolve
+- immutable long-lived cache for hashed files under `/assets/`
+- `no-cache` on `index.html`, so a new deploy reaches the browser
+- gzip for text assets
 
 It deploys to any container platform — Cloud Run, ECS, Fly.io, Railway, Azure Container Apps.
 
 ## Deploying without Docker
 
-The built-in server is production-ready. Build and ship the output:
-
-```
-├── package.json
-├── package-lock.json
-└── build/
-    ├── client/   # static assets
-    └── server/   # server-side code
-```
-
-Then run `npm run start`.
+`npm run build` emits a fully static `dist/`. Upload it to any static host (Vercel, Netlify, S3 + CloudFront, GitHub Pages) and configure the host to rewrite unknown paths to `index.html` — without that rewrite, refreshing a nested route returns a 404.
