@@ -1,4 +1,4 @@
-# react-vite-base
+# React with Vite (WIP)
 
 Base template for React single-page applications built with **Vite**, **React Router 8 (Data Mode)**, and **TypeScript** — preconfigured with testing, linting, formatting, git hooks, and an nginx-based Docker build.
 
